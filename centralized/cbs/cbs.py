@@ -16,13 +16,14 @@ from copy import deepcopy
 from cbs.a_star import AStar
 
 class Location(object):
-    def __init__(self, x=-1, y=-1):
+    def __init__(self, x=-1, y=-1, z=-1):
         self.x = x
         self.y = y
+        self.z = z
     def __eq__(self, other):
-        return self.x == other.x and self.y == other.y
+        return self.x == other.x and self.y == other.y and self.z == other.z #threshold
     def __str__(self):
-        return str((self.x, self.y))
+        return str((self.x, self.y, self.z))
 
 class State(object):
     def __init__(self, time, location):
@@ -115,21 +116,32 @@ class Environment(object):
         if self.state_valid(n):
             neighbors.append(n)
         # Up action
-        n = State(state.time + 1, Location(state.location.x, state.location.y+1))
+        n = State(state.time + 1, Location(state.location.x, state.location.y+1, state.location.z))
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
         # Down action
-        n = State(state.time + 1, Location(state.location.x, state.location.y-1))
+        n = State(state.time + 1, Location(state.location.x, state.location.y-1, state.location.z))
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
         # Left action
-        n = State(state.time + 1, Location(state.location.x-1, state.location.y))
+        n = State(state.time + 1, Location(state.location.x-1, state.location.y, state.location.z))
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
         # Right action
-        n = State(state.time + 1, Location(state.location.x+1, state.location.y))
+        n = State(state.time + 1, Location(state.location.x+1, state.location.y, state.location.z))
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
+        # Front action
+        n = State(state.time + 1, Location(state.location.x, state.location.y, state.location.z+1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+        # Right action
+        n = State(state.time + 1, Location(state.location.x, state.location.y, state.location.z-1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+
+
         return neighbors
 
 
@@ -218,8 +230,8 @@ class Environment(object):
 
     def make_agent_dict(self):
         for agent in self.agents:
-            start_state = State(0, Location(agent['start'][0], agent['start'][1]))
-            goal_state = State(0, Location(agent['goal'][0], agent['goal'][1]))
+            start_state = State(0, Location(agent['start'][0], agent['start'][1], agent['start'][2]))
+            goal_state = State(0, Location(agent['goal'][0], agent['goal'][1], agent['goal'][2]))
 
             self.agent_dict.update({agent['name']:{'start':start_state, 'goal':goal_state}})
 
@@ -260,13 +272,19 @@ class CBS(object):
     def search(self):
         start = HighLevelNode()
         # TODO: Initialize it in a better way
+
+        # LOCAL A* assuming no collisions.
+
         start.constraint_dict = {}
         for agent in self.env.agent_dict.keys():
             start.constraint_dict[agent] = Constraints()
         start.solution = self.env.compute_solution()
+
         if not start.solution:
+            # no path
             return {}
         start.cost = self.env.compute_solution_cost(start.solution)
+        # best cost ^
 
         self.open_set |= {start}
 
@@ -303,7 +321,7 @@ class CBS(object):
     def generate_plan(self, solution):
         plan = {}
         for agent, path in solution.items():
-            path_dict_list = [{'t':state.time, 'x':state.location.x, 'y':state.location.y} for state in path]
+            path_dict_list = [{'t':state.time, 'x':state.location.x, 'y':state.location.y, 'z':state.location.z} for state in path]
             plan[agent] = path_dict_list
         return plan
 
