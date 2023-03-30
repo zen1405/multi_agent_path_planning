@@ -14,14 +14,21 @@ from itertools import combinations
 from copy import deepcopy
 
 from cbs.a_star import AStar
+THRESHOLD = 2
+
 
 class Location(object):
     def __init__(self, x=-1, y=-1, z=-1):
         self.x = x
         self.y = y
         self.z = z
+
     def __eq__(self, other):
-        return self.x == other.x and self.y == other.y and self.z == other.z #threshold
+        x_dist = abs(self.x - other.x)
+        y_dist = abs(self.y - other.y)
+        z_dist = abs(self.z - other.z)
+        return x_dist + y_dist + z_dist < THRESHOLD #threshold
+
     def __str__(self):
         return str((self.x, self.y, self.z))
 
@@ -32,11 +39,13 @@ class State(object):
     def __eq__(self, other):
         return self.time == other.time and self.location == other.location
     def __hash__(self):
-        return hash(str(self.time)+str(self.location.x) + str(self.location.y))
+        return hash(str(self.time)+str(self.location.x) + str(self.location.y) + str(self.location.z))
     def is_equal_except_time(self, state):
         return self.location == state.location
+    def exact_equal(self, state):
+        return self.location.x == state.location.x and self.location.y == state.location.y and self.location.z == state.location.z
     def __str__(self):
-        return str((self.time, self.location.x, self.location.y))
+        return str((self.time, self.location.x, self.location.y, self.location.z))
 
 class Conflict(object):
     VERTEX = 1
@@ -140,8 +149,6 @@ class Environment(object):
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
 
-
-
         return neighbors
 
 
@@ -210,8 +217,9 @@ class Environment(object):
     def state_valid(self, state):
         return state.location.x >= 0 and state.location.x < self.dimension[0] \
             and state.location.y >= 0 and state.location.y < self.dimension[1] \
+            and state.location.z >= 0 and state.location.z < self.dimension[2] \
             and VertexConstraint(state.time, state.location) not in self.constraints.vertex_constraints \
-            and (state.location.x, state.location.y) not in self.obstacles
+            and (state.location.x, state.location.y, state.location.z) not in self.obstacles
 
     def transition_valid(self, state_1, state_2):
         return EdgeConstraint(state_1.time, state_1.location, state_2.location) not in self.constraints.edge_constraints
@@ -221,12 +229,13 @@ class Environment(object):
 
     def admissible_heuristic(self, state, agent_name):
         goal = self.agent_dict[agent_name]["goal"]
-        return fabs(state.location.x - goal.location.x) + fabs(state.location.y - goal.location.y)
+        return fabs(state.location.x - goal.location.x) + fabs(state.location.y - goal.location.y)\
+              + fabs(state.location.z - goal.location.z)
 
 
     def is_at_goal(self, state, agent_name):
         goal_state = self.agent_dict[agent_name]["goal"]
-        return state.is_equal_except_time(goal_state)
+        return state.exact_equal(goal_state)
 
     def make_agent_dict(self):
         for agent in self.agents:
