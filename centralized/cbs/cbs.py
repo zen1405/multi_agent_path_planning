@@ -1,10 +1,3 @@
-"""
-
-Python implementation of Conflict-based search
-
-author: Ashwin Bose (@atb033)
-
-"""
 import sys
 sys.path.insert(0, '../')
 import argparse
@@ -14,7 +7,7 @@ from itertools import combinations
 from copy import deepcopy
 
 from cbs.a_star import AStar
-THRESHOLD = 2
+THRESHOLD = 2 # bounding box
 
 
 class Location(object):
@@ -124,7 +117,15 @@ class Environment(object):
         n = State(state.time + 1, state.location)
         if self.state_valid(n):
             neighbors.append(n)
-        # Up action
+
+        movements = [(dx, dy, dz) for dx in (-1, 0, 1) for dy in (-1, 0, 1) for dz in (-1, 0, 1) if not (dx == 0 and dy == 0 and dz == 0)]
+
+        for i, j, k in movements:
+            # print(i, j, k)
+            n = State(state.time + 1, Location(state.location.x+i, state.location.y+j, state.location.z+k))
+            if self.state_valid(n) and self.transition_valid(state, n):
+                neighbors.append(n)
+        """# Up action
         n = State(state.time + 1, Location(state.location.x, state.location.y+1, state.location.z))
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
@@ -144,11 +145,43 @@ class Environment(object):
         n = State(state.time + 1, Location(state.location.x, state.location.y, state.location.z+1))
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
-        # Right action
+        # Back action
         n = State(state.time + 1, Location(state.location.x, state.location.y, state.location.z-1))
         if self.state_valid(n) and self.transition_valid(state, n):
             neighbors.append(n)
 
+        n = State(state.time + 1, Location(state.location.x-1, state.location.y, state.location.z-1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+        n = State(state.time + 1, Location(state.location.x+1, state.location.y, state.location.z-1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+        n = State(state.time + 1, Location(state.location.x-1, state.location.y, state.location.z+1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+        n = State(state.time + 1, Location(state.location.x+1, state.location.y, state.location.z+1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+        n = State(state.time + 1, Location(state.location.x, state.location.y+1, state.location.z-1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+        n = State(state.time + 1, Location(state.location.x, state.location.y-1, state.location.z-1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+        n = State(state.time + 1, Location(state.location.x, state.location.y+1, state.location.z+1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+
+        n = State(state.time + 1, Location(state.location.x, state.location.y-1, state.location.z+1))
+        if self.state_valid(n) and self.transition_valid(state, n):
+            neighbors.append(n)
+        """
         return neighbors
 
 
@@ -335,6 +368,9 @@ class CBS(object):
         return plan
 
 
+def run():
+    pass
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("param", help="input file containing map and obstacles")
@@ -362,6 +398,7 @@ def main():
         return
 
     # Write to output file
+    # print(solution)
     output = dict()
     output["schedule"] = solution
     output["cost"] = env.compute_solution_cost(solution)
